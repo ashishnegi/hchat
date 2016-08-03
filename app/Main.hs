@@ -1,9 +1,9 @@
 module Main where
 
-import Lib
 import Network.Socket hiding (send, sendTo, recv, recvFrom)
 import Network.Socket.ByteString
 import qualified Data.ByteString.Char8 as C
+import Control.Concurrent
 
 main :: IO ()
 main = do
@@ -17,10 +17,10 @@ main = do
 mainLoop :: Socket -> IO ()
 mainLoop sock = do
   conn <- accept sock
-  runConn conn
+  forkIO $ runConn conn
   mainLoop sock
 
 runConn :: (Socket, SockAddr) -> IO ()
 runConn (sock, _) = do
-  send sock $ C.pack "Hello and Bye :P \n"
+  send sock $ C.pack "Hello and Byes :P \n"
   close sock

@@ -8,6 +8,7 @@ import Control.Concurrent.Chan
 
 import Control.Monad (liftM)
 import Control.Monad.Fix (fix)
+import Control.Exception
 
 main :: IO ()
 main = do
@@ -17,6 +18,11 @@ main = do
   let maxQueuedConnections = 5
   listen sock maxQueuedConnections
   serverChan <- newChan
+
+  forkIO $ fix $ \loop -> do
+    a <- readChan serverChan -- needed to prevent memory leaks
+    loop
+
   mainLoop sock serverChan
 
 mainLoop :: Socket -> Chan Msg -> IO ()
@@ -27,22 +33,24 @@ mainLoop sock serverChan = do
 
 runConn :: (Socket, SockAddr) -> Chan Msg -> IO ()
 runConn (sock, _) serverChan = do
-  send sock $ C.pack "Hello.. Please type text to broadcast.. \n"
+  send sock $ C.pack "Hello.. Please type text (< 1024 chars) to broadcast.. \n"
 
   clientChan <- dupChan serverChan
 
   let maxBytesToRecv = 1024
 
-  forkIO $ fix $ \loop -> do
+  writer <- forkIO $ fix $ \loop -> do
     msg <- recv sock maxBytesToRecv
     writeChan serverChan msg
     loop
 
-  fix $ \loop -> do
+  handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
     msg <- readChan clientChan
     send sock msg
     loop
 
+  killThread writer
+  writeChan serverChan $ C.pack "<------- User left --------->"
   close sock
 
 

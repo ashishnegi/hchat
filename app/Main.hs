@@ -6,7 +6,7 @@ import qualified Data.ByteString.Char8 as C
 import Control.Concurrent
 import Control.Concurrent.Chan
 
-import Control.Monad (liftM)
+import Control.Monad (liftM, when)
 import Control.Monad.Fix (fix)
 import Control.Exception
 
@@ -20,19 +20,19 @@ main = do
   serverChan <- newChan
 
   forkIO $ fix $ \loop -> do
-    a <- readChan serverChan -- needed to prevent memory leaks
+    (_, a) <- readChan serverChan -- needed to prevent memory leaks
     loop
 
-  mainLoop sock serverChan
+  mainLoop sock serverChan 0
 
-mainLoop :: Socket -> Chan Msg -> IO ()
-mainLoop sock serverChan = do
+mainLoop :: Socket -> Chan Msg -> ClientId -> IO ()
+mainLoop sock serverChan clientId = do
   conn <- accept sock
-  forkIO $ runConn conn serverChan
-  mainLoop sock serverChan
+  forkIO $ runConn conn serverChan clientId
+  mainLoop sock serverChan $ clientId + 1
 
-runConn :: (Socket, SockAddr) -> Chan Msg -> IO ()
-runConn (sock, _) serverChan = do
+runConn :: (Socket, SockAddr) -> Chan Msg -> ClientId -> IO ()
+runConn (sock, _) serverChan id = do
   send sock $ C.pack "Hello.. Please type text (< 1024 chars) to broadcast.. \n"
 
   clientChan <- dupChan serverChan
@@ -41,17 +41,22 @@ runConn (sock, _) serverChan = do
 
   writer <- forkIO $ fix $ \loop -> do
     msg <- recv sock maxBytesToRecv
-    writeChan serverChan msg
-    loop
+
+    case cleanByteString msg of
+      "quit" -> send sock (C.pack "Sayonara...!!!") >> return ()
+      _ -> writeChan serverChan (id, msg) >> loop
 
   handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
-    msg <- readChan clientChan
-    send sock msg
+    (senderId, msg) <- readChan clientChan
+    when (senderId /= id) $ send sock msg >> return ()
     loop
 
   killThread writer
-  writeChan serverChan $ C.pack "<------- User left --------->"
+  writeChan serverChan (id, C.pack "<------- User left --------->")
   close sock
 
 
-type Msg = C.ByteString
+type ClientId = Int
+type Msg = (ClientId, C.ByteString)
+
+cleanByteString = reverse . dropWhile (\c -> c == '\n' || c == '\r') . reverse . C.unpack

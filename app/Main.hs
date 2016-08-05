@@ -37,22 +37,20 @@ runConn (sock, _) serverChan id = do
 
   clientChan <- dupChan serverChan
 
-  let maxBytesToRecv = 1024
-
-  writer <- forkIO $ fix $ \loop -> do
-    msg <- recv sock maxBytesToRecv
-
-    case cleanByteString msg of
-      "quit" -> send sock (C.pack "Sayonara...!!!") >> return ()
-      _ -> writeChan serverChan (id, msg) >> loop
-
-  handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
+  reader <- forkIO $ fix $ \loop -> do
     (senderId, msg) <- readChan clientChan
     when (senderId /= id) $ send sock msg >> return ()
     loop
 
-  killThread writer
-  writeChan serverChan (id, C.pack "<------- User left --------->")
+  let maxBytesToRecv = 1024
+  handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
+    msg <- recv sock maxBytesToRecv
+    case cleanByteString msg of
+      "quit" -> send sock (C.pack "Sayonara...!!!") >> return ()
+      _ -> writeChan serverChan (id, msg) >> loop
+
+  killThread reader
+  writeChan serverChan (id, C.pack "<------- User left --------->\n")
   close sock
 
 

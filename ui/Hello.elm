@@ -1,30 +1,37 @@
 module Hello exposing (..)
 
-import Html exposing (Html, text, div)
+import Html exposing (Html, text, div, button)
+import Html.Events exposing (onClick)
 import Html.App
 
 -- Model
 type alias Model =
-    String
+    Bool
 
 init : (Model, Cmd Msg)
-init = ("Hello", Cmd.none)
+init = (False, Cmd.none)
 
 -- Messages
-type Msg =
-    NoOp
+type Msg = Collapse
+         | Expand
 
 -- View
 view : Model -> Html Msg
 view model =
-    div []
-        [text model]
+    if model then
+        div []
+            [button [onClick Collapse] [text "Collapse"]
+            ,text "Widget"]
+    else
+        div []
+            [button [onClick Expand] [text "Expand"]]
 
 -- Update
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        NoOp -> (model, Cmd.none)
+        Collapse -> (False, Cmd.none)
+        Expand   -> (True,  Cmd.none)
 
 -- Subscription
 subscriptions : Model -> Sub Msg

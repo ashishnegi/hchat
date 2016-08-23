@@ -1,4 +1,4 @@
-module Network where
+module HChat.Network where
 
 -- For Network.Socket library
 import qualified Network.Socket as NS (Socket, accept)
@@ -6,7 +6,7 @@ import qualified Network.Socket.ByteString as NSB (send, recv)
 import qualified Data.ByteString.Char8 as C
 
 -- For WebSockets library
--- import qualified Network.WebSocket as WS
+import qualified Network.WebSockets as WS
 
 import Control.Monad (void)
 
@@ -21,4 +21,7 @@ instance NetworkSocket NS.Socket where
   accept sock    = fst <$> NS.accept sock
 
 
--- instance NetworkSocket WS.
+instance NetworkSocket WS.PendingConnection where
+  send sock text = error "Not allowed"
+  recv sock      = error "Not allowed"
+  accept sock    = error "Not implemented"

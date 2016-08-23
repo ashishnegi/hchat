@@ -4,9 +4,8 @@ import Network.Socket hiding (send, sendTo, recv, recvFrom)
 import Network.Socket.ByteString
 import qualified Data.ByteString.Char8 as C
 import Control.Concurrent
-import Control.Concurrent.Chan
 
-import Control.Monad (liftM, when)
+import Control.Monad (when)
 import Control.Monad.Fix (fix)
 import Control.Exception
 

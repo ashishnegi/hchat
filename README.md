@@ -1,7 +1,9 @@
 #HChat
 
 A simple chat client in Haskell,
-while learning multi threading.
+while learning multi threading and networking.
+
+Also starting making ui in Elm. :)
 
 ## Run
 

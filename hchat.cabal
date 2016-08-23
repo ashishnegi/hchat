@@ -27,6 +27,7 @@ executable hchat-exe
                      , hchat
                      , network
                      , bytestring
+                     , websockets
   default-language:    Haskell2010
 
 test-suite hchat-test

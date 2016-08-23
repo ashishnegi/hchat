@@ -10,18 +10,22 @@ import qualified Network.WebSockets as WS
 
 import Control.Monad (void)
 
-class NetworkSocket sock where
+class NetworkConn sock where
   send :: sock -> C.ByteString -> IO ()
   recv :: sock -> IO (C.ByteString)
-  accept :: sock -> IO sock
+  accept :: (NetworkConn myconn) => sock -> IO myconn
 
-instance NetworkSocket NS.Socket where
+instance NetworkConn NS.Socket where
   send sock text = void $ NSB.send sock text
   recv sock      = NSB.recv sock 1024
   accept sock    = fst <$> NS.accept sock
 
+instance NetworkConn WS.Connection where
+  send sock text = WS.sendTextData sock text
+  recv sock      = WS.receiveData sock
+  accept sock    = error "Not allowed"
 
-instance NetworkSocket WS.PendingConnection where
+instance NetworkConn WS.PendingConnection where
   send sock text = error "Not allowed"
   recv sock      = error "Not allowed"
-  accept sock    = error "Not implemented"
+  accept sock    = WS.acceptRequest sock

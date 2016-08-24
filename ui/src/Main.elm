@@ -3,10 +3,12 @@ module Main exposing (..)
 import Html exposing (Html, text, div, button)
 import Html.Events exposing (onClick)
 import Html.App
-import User.User as User
 import WebSocket
 import Json.Decode as Decode exposing ((:=))
 import Json.Encode as Encode
+
+import User.User as User
+import ChatBox.ChatBox as ChatBox
 
 main : Program Never
 main =
@@ -18,19 +20,24 @@ main =
         }
 
 type alias Model =
-    { me : User.Model }
+    { me : User.Model
+    , chatBox : ChatBox.Model }
 
 init : (Model, Cmd Msg)
 init = ( Model (User.Model 1 "ashish" "")
+               (ChatBox.Model [])
        , Cmd.none)
 
 type Msg = UserMsg User.Msg
+         | ChatBoxMsg ChatBox.Msg
          | NewMessage Int String String
          | NoOp
 
 view : Model -> Html Msg
 view model =
-    Html.App.map UserMsg (User.view model.me)
+    div []
+        [ Html.App.map ChatBoxMsg (ChatBox.view model.chatBox)
+        , Html.App.map UserMsg (User.view model.me) ]
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -45,6 +52,9 @@ update msg model =
                , Cmd.batch [ Cmd.map UserMsg cmds
                            , extraCommand ] )
 
+        NewMessage id name message -> let (chatBox', cmds) = ChatBox.update (ChatBox.NewMsg (id, name, message)) model.chatBox
+                                      in ( { model | chatBox = chatBox' }
+                                      , Cmd.map ChatBoxMsg cmds )
         _ -> ( model, Cmd.none )
 
 subscriptions : Model -> Sub Msg

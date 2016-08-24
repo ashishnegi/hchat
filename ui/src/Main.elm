@@ -3,44 +3,35 @@ module Hello exposing (..)
 import Html exposing (Html, text, div, button)
 import Html.Events exposing (onClick)
 import Html.App
-import Http
-import Task exposing (Task)
-import Json.Encode
-import Json.Decode
+import User.User as User
 
 -- Model
 type alias Model =
-    Bool
+    { me : User.Model }
 
 init : (Model, Cmd Msg)
-init = (False, Cmd.none)
+init = ( Model (User.Model 1 "ashish" "")
+       , Cmd.none)
 
 -- Messages
-type Msg = Collapse
-         | Expand
+type Msg = UserMsg User.Msg
 
 -- View
 view : Model -> Html Msg
 view model =
-    if model then
-        div []
-            [button [onClick Collapse] [text "Collapse"]
-            ,text "Widget"]
-    else
-        div []
-            [button [onClick Expand] [text "Expand"]]
+    Html.App.map UserMsg (User.view model.me)
 
 -- Update
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        Collapse -> (False, Cmd.none)
-        Expand   -> (True,  Cmd.none)
+        UserMsg m -> let ( me', cmds ) = User.update m model.me
+                     in ( { model | me = me' }
+                        , Cmd.map UserMsg cmds )
 
 -- Subscription
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
+subscriptions model = Sub.map UserMsg (User.subscriptions model.me)
 
 main : Program Never
 main =

@@ -13,13 +13,13 @@ type Msg = NewMsg MessageData
 view : Model -> Html Msg
 view model =
     div [ class "chatbox" ]
+        -- reverse render the messages : latest at bottom.
         ( List.map msgView (List.reverse model.msgs) )
 
 msgView : MessageData -> Html Msg
 msgView (id, name, msg) =
     div [ class "message" ]
-        [ div [ class "name username text" ] [text name]
-        , text " : "
+        [ div [ class "name username text" ] [text (name ++ " : ")]
         , div [ class "usermsg text" ] [text msg]
         ]
 

@@ -41,21 +41,24 @@ view model =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-    case msg of
-        UserMsg m ->
-            let ( me', cmds ) = User.update m model.me
-                extraCommand = case m of
-                                   User.SendMsg -> sendMsg me'
-                                   _            -> Cmd.none
+    let chatBoxMsgHandler msg =
+            let (chatBox', cmds) = ChatBox.update msg model.chatBox
+            in ( { model | chatBox = chatBox' }
+               , Cmd.map ChatBoxMsg cmds )
+    in case msg of
+           UserMsg m ->
+               let ( me', cmds ) = User.update m model.me
+                   extraCommand  = case m of
+                                       User.SendMsg -> sendMsg me'
+                                       _            -> Cmd.none
+                   allCommands   = Cmd.batch [ Cmd.map UserMsg cmds
+                                             , extraCommand ]
+               in ( { model | me = me' }
+                  , allCommands )
 
-            in ( { model | me = me' }
-               , Cmd.batch [ Cmd.map UserMsg cmds
-                           , extraCommand ] )
-
-        NewMessage id name message -> let (chatBox', cmds) = ChatBox.update (ChatBox.NewMsg (id, name, message)) model.chatBox
-                                      in ( { model | chatBox = chatBox' }
-                                      , Cmd.map ChatBoxMsg cmds )
-        _ -> ( model, Cmd.none )
+           NewMessage id name message -> chatBoxMsgHandler (ChatBox.NewMsg (id, name, message))
+           ChatBoxMsg m -> chatBoxMsgHandler m
+           NoOp -> ( model, Cmd.none )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

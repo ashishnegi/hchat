@@ -3,6 +3,10 @@ module Hello exposing (..)
 import Html exposing (Html, text, div, button)
 import Html.Events exposing (onClick)
 import Html.App
+import Http
+import Task exposing (Task)
+import Json.Encode
+import Json.Decode
 
 -- Model
 type alias Model =
